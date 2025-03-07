@@ -3,6 +3,12 @@ const jwt = require('jsonwebtoken');
 let books = require("./booksdb.js");
 const regd_users = express.Router();
 
+// const app = express();
+// app.use(express.json());
+// app.use(express.urlencoded({ extended: true }));
+// app.use("/", regd_users);
+
+
 let users = [
     {
         "username":"Alex Ngo",
@@ -22,29 +28,59 @@ const authenticatedUser = (username,password)=>{ //returns boolean
 
 // User login
 
-regd_users.post("/login", (req,res) => {
-    const {username, password} = req.body;
+regd_users.post("/customer/login", (req, res) => {
+    const { username, password } = req.body;
 
-    if (req.session.authorization){
-      return res.status(403).json({message: "You are already logged in."})
+    if (req.session.authorization) {
+        return res.status(403).json({ message: "You are already logged in." });
     }
 
-    if (!username || !password){
-      return res.status(200).json({ message: "username and password are required to login." });
+    if (!username || !password) {
+        return res.status(401).json({ message: "Username and password are required to login." });
     }
-  
-    if (authenticatedUser (username, password)){
-      //req.session.username = username;
-      let token = jwt.sign({ username: username }, 'access', { expiresIn: '1h' });
-      req.session.authorization = { accessToken: token }; 
-      console.log(req.session.authorization);
-  
-  
-      return res.status(200).json({message: "Login successful."});
+
+    if (authenticatedUser(username, password)) {
+        req.session.regenerate((err) => { // Regenerate session
+            if (err) {
+                console.error("Session regeneration error:", err);
+                return res.status(500).json({ message: "Internal server error." });
+            }
+
+            let token = jwt.sign({ username: username }, 'access', { expiresIn: '1h' });
+            req.session.authorization = { accessToken: token };
+            console.log(req.session.authorization);
+
+            return res.status(201).json({ message: "Login successful." });
+        });
     } else {
-      return res.status(401).json({ message: "Invalid username or password."});
+        return res.status(401).json({ message: "Invalid username or password." });
     }
 });
+
+// regd_users.post("/customer/login", (req, res) => {
+//     const {username, password} = req.body;
+
+//     if (req.session.authorization){
+//       return res.status(403).json({message: "You are already logged in."})
+//     }
+
+//     if (!username || !password){
+//       return res.status(400).json({ message: "username and password are required to login." });
+//     }
+  
+//     if (authenticatedUser (username, password)){
+//       req.session.username = username;
+//       let token = jwt.sign({ username: username }, 'access', { expiresIn: '1h' });
+//       req.session.authorization = { accessToken: token }; 
+//       console.log(req.session.authorization);
+  
+  
+//       return res.status(200).json({message: "Login successful."});
+//     } else {
+//       return res.status(401).json({ message: "Invalid username or password."});
+//     }
+// });
+
 
 // Add a book review
 
